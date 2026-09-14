@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Transactions - Spendly</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="bg-[#f5f7f8] text-gray-900">
+
+
+<div class="min-h-screen flex">
+
+
+    <!-- ================================================= -->
+    <!-- SIDEBAR -->
+    <!-- ================================================= -->
+
+    <aside
+        class="w-60 bg-white border-r border-gray-100
+               min-h-screen flex flex-col
+               px-4 py-7">
+
+
+        <!-- LOGO -->
+
+        <div class="flex items-center gap-3 px-3 mb-10">
+
+            <div
+                class="w-7 h-7 bg-lime-300 rounded-lg">
+            </div>
+
+            <span class="text-xl font-bold">
+                Spendly
+            </span>
+
+        </div>
+
+
+        <!-- NAV -->
+
+        <nav class="space-y-2">
+
+
+            <a
+                href="{{ url_for('dashboard') }}"
+                class="flex items-center gap-3
+                       px-3 py-3 rounded-xl
+                       text-gray-500
+                       hover:bg-gray-50">
+
+                <span>⌂</span>
+
+                Dashboard
+
+            </a>
+
+
+            <a
+                href="{{ url_for('transactions.list_transactions') }}"
+                class="flex items-center gap-3
+                       px-3 py-3 rounded-xl
+                       bg-gray-900 text-white
+                       font-medium">
+
+                <span>↕</span>
+
+                Transactions
+
+            </a>
+
+
+            <a
+                href="{{ url_for('transactions.add_transaction') }}"
+                class="flex items-center gap-3
+                       px-3 py-3 rounded-xl
+                       text-gray-500
+                       hover:bg-gray-50">
+
+                <span>＋</span>
+
+                Add Transaction
+
+            </a>
+
+
+            <a
+                href="#"
+                class="flex items-center gap-3
+                       px-3 py-3 rounded-xl
+                       text-gray-500">
+
+                <span>▥</span>
+
+                Reports
+
+            </a>
+
+        </nav>
+
+
+        <!-- BOTTOM -->
+
+        <div class="mt-auto">
+
+            <a
+                href="{{ url_for('auth.logout') }}"
+                class="flex items-center gap-3
+                       px-3 py-3 rounded-xl
+                       text-gray-500
+                       hover:bg-red-50
+                       hover:text-red-600">
+
+                <span>↪</span>
+
+                Logout
+
+            </a>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- ================================================= -->
+    <!-- MAIN -->
+    <!-- ================================================= -->
+
+    <main class="flex-1 p-8">
+
+
+        <!-- HEADER -->
+
+        <div
+            class="flex items-start
+                   justify-between mb-8">
+
+
+            <div>
+
+                <h1 class="text-3xl font-bold">
+
+                    Transactions
+
+                </h1>
+
+                <p class="text-gray-500 text-sm mt-2">
+
+                    View and manage your income and expenses.
+
+                </p>
+
+            </div>
+
+
+            <a
+                href="{{ url_for('transactions.add_transaction') }}"
+                class="bg-gray-900 text-white
+                       px-5 py-3
+                       rounded-xl
+                       text-sm font-semibold
+                       hover:bg-gray-800">
+
+                + Add Transaction
+
+            </a>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- FLASH MESSAGE -->
+        <!-- ================================================= -->
+
+        {% with messages =
+            get_flashed_messages(with_categories=true)
+        %}
+
+            {% for category, message in messages %}
+
+                <div
+                    class="mb-5 px-4 py-3 rounded-xl text-sm
+
+                    {% if category == 'success' %}
+                        bg-green-100 text-green-700
+                    {% else %}
+                        bg-red-100 text-red-700
+                    {% endif %}">
+
+                    {{ message }}
+
+                </div>
+
+            {% endfor %}
+
+        {% endwith %}
+
+
+
+        <!-- ================================================= -->
+        <!-- SUMMARY CARDS -->
+        <!-- ================================================= -->
+
+        <div
+            class="grid grid-cols-1
+                   md:grid-cols-3
+                   gap-4 mb-6">
+
+
+            <!-- INCOME -->
+
+            <div
+                class="bg-white
+                       rounded-2xl
+                       border border-gray-100
+                       p-5">
+
+                <p class="text-sm text-gray-500">
+
+                    Total Income
+
+                </p>
+
+                <p
+                    class="text-2xl font-bold
+                           text-green-600 mt-2">
+
+                    ₹{{ "%.2f"|format(total_income) }}
+
+                </p>
+
+            </div>
+
+
+            <!-- EXPENSE -->
+
+            <div
+                class="bg-white
+                       rounded-2xl
+                       border border-gray-100
+                       p-5">
+
+                <p class="text-sm text-gray-500">
+
+                    Total Expense
+
+                </p>
+
+                <p
+                    class="text-2xl font-bold
+                           text-red-500 mt-2">
+
+                    ₹{{ "%.2f"|format(total_expense) }}
+
+                </p>
+
+            </div>
+
+
+            <!-- BALANCE -->
+
+            <div
+                class="bg-lime-300
+                       rounded-2xl
+                       p-5">
+
+                <p class="text-sm">
+
+                    Balance
+
+                </p>
+
+                <p class="text-2xl font-bold mt-2">
+
+                    ₹{{ "%.2f"|format(balance) }}
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- FILTERS -->
+        <!-- ================================================= -->
+
+        <div
+            class="bg-white
+                   rounded-2xl
+                   border border-gray-100
+                   p-5 mb-5">
+
+
+            <form
+                method="GET"
+                class="flex flex-col
+                       md:flex-row
+                       gap-3">
+
+
+                <!-- SEARCH -->
+
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ search }}"
+                    placeholder="Search description or category..."
+                    class="flex-1
+                           px-4 py-3
+                           border border-gray-200
+                           rounded-xl
+                           text-sm
+                           focus:outline-none
+                           focus:ring-2
+                           focus:ring-lime-300"
+                >
+
+
+                <!-- TYPE -->
+
+                <select
+                    name="type"
+                    class="px-4 py-3
+                           border border-gray-200
+                           rounded-xl
+                           text-sm
+                           bg-white
+                           focus:outline-none
+                           focus:ring-2
+                           focus:ring-lime-300">
+
+                    <option value="">
+                        All Transactions
+                    </option>
+
+                    <option
+                        value="Income"
+                        {% if transaction_type == "Income" %}
+                            selected
+                        {% endif %}>
+
+                        Income
+
+                    </option>
+
+                    <option
+                        value="Expense"
+                        {% if transaction_type == "Expense" %}
+                            selected
+                        {% endif %}>
+
+                        Expense
+
+                    </option>
+
+                </select>
+
+
+                <!-- FILTER BUTTON -->
+
+                <button
+                    type="submit"
+                    class="px-6 py-3
+                           bg-gray-900
+                           text-white
+                           rounded-xl
+                           text-sm
+                           font-semibold">
+
+                    Filter
+
+                </button>
+
+
+                <!-- CLEAR -->
+
+                <a
+                    href="{{ url_for('transactions.list_transactions') }}"
+                    class="px-6 py-3
+                           border border-gray-200
+                           rounded-xl
+                           text-sm
+                           text-center">
+
+                    Clear
+
+                </a>
+
+            </form>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- TRANSACTIONS TABLE -->
+        <!-- ================================================= -->
+
+        <div
+            class="bg-white
+                   rounded-2xl
+                   border border-gray-100
+                   overflow-hidden">
+
+
+            <div
+                class="px-6 py-5
+                       border-b border-gray-100">
+
+                <h2 class="font-bold">
+
+                    Recent Transactions
+
+                </h2>
+
+            </div>
+
+
+            {% if transactions %}
+
+
+                <!-- DESKTOP TABLE -->
+
+                <div class="overflow-x-auto">
+
+                    <table class="w-full">
+
+
+                        <thead
+                            class="bg-gray-50
+                                   text-xs
+                                   text-gray-500">
+
+                            <tr>
+
+                                <th
+                                    class="text-left
+                                           px-6 py-4
+                                           font-medium">
+
+                                    Date
+
+                                </th>
+
+
+                                <th
+                                    class="text-left
+                                           px-6 py-4
+                                           font-medium">
+
+                                    Description
+
+                                </th>
+
+
+                                <th
+                                    class="text-left
+                                           px-6 py-4
+                                           font-medium">
+
+                                    Category
+
+                                </th>
+
+
+                                <th
+                                    class="text-left
+                                           px-6 py-4
+                                           font-medium">
+
+                                    Type
+
+                                </th>
+
+
+                                <th
+                                    class="text-right
+                                           px-6 py-4
+                                           font-medium">
+
+                                    Amount
+
+                                </th>
+
+
+                                <th
+                                    class="text-right
+                                           px-6 py-4
+                                           font-medium">
+
+                                    Action
+
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody
+                            class="divide-y
+                                   divide-gray-100">
+
+
+                            {% for transaction in transactions %}
+
+                                <tr
+                                    class="hover:bg-gray-50">
+
+
+                                    <!-- DATE -->
+
+                                    <td
+                                        class="px-6 py-4
+                                               text-sm
+                                               text-gray-500
+                                               whitespace-nowrap">
+
+                                        {{ transaction.transaction_date }}
+
+                                    </td>
+
+
+                                    <!-- DESCRIPTION -->
+
+                                    <td
+                                        class="px-6 py-4">
+
+                                        <div
+                                            class="font-medium
+                                                   text-sm">
+
+                                            {{ transaction.description
+                                               or "No description" }}
+
+                                        </div>
+
+                                    </td>
+
+
+                                    <!-- CATEGORY -->
+
+                                    <td
+                                        class="px-6 py-4">
+
+                                        <span
+                                            class="px-3 py-1
+                                                   bg-gray-100
+                                                   rounded-full
+                                                   text-xs">
+
+                                            {{ transaction.category }}
+
+                                        </span>
+
+                                    </td>
+
+
+                                    <!-- TYPE -->
+
+                                    <td
+                                        class="px-6 py-4">
+
+                                        {% if transaction.type == "Income" %}
+
+                                            <span
+                                                class="px-3 py-1
+                                                       bg-green-100
+                                                       text-green-700
+                                                       rounded-full
+                                                       text-xs
+                                                       font-medium">
+
+                                                Income
+
+                                            </span>
+
+                                        {% else %}
+
+                                            <span
+                                                class="px-3 py-1
+                                                       bg-red-100
+                                                       text-red-600
+                                                       rounded-full
+                                                       text-xs
+                                                       font-medium">
+
+                                                Expense
+
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- AMOUNT -->
+
+                                    <td
+                                        class="px-6 py-4
+                                               text-right
+                                               font-semibold
+                                               text-sm
+                                               whitespace-nowrap">
+
+                                        {% if transaction.type == "Income" %}
+
+                                            <span
+                                                class="text-green-600">
+
+                                                +₹{{ "%.2f"|format(transaction.amount) }}
+
+                                            </span>
+
+                                        {% else %}
+
+                                            <span
+                                                class="text-red-500">
+
+                                                -₹{{ "%.2f"|format(transaction.amount) }}
+
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- DELETE -->
+
+                                    <td
+                                        class="px-6 py-4
+                                               text-right">
+
+                                        <form
+                                            method="POST"
+                                            action="{{
+                                                url_for(
+                                                    'transactions.delete_transaction',
+                                                    transaction_id=transaction.id
+                                                )
+                                            }}"
+                                            onsubmit="
+                                                return confirm(
+                                                    'Delete this transaction?'
+                                                );
+                                            ">
+
+                                            <button
+                                                type="submit"
+                                                class="text-red-500
+                                                       hover:text-red-700
+                                                       text-sm">
+
+                                                Delete
+
+                                            </button>
+
+                                        </form>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+            {% else %}
+
+
+                <!-- EMPTY STATE -->
+
+                <div
+                    class="py-16
+                           text-center">
+
+
+                    <div class="text-4xl mb-4">
+
+                        💸
+
+                    </div>
+
+
+                    <h3
+                        class="font-semibold
+                               text-lg">
+
+                        No transactions found
+
+                    </h3>
+
+
+                    <p
+                        class="text-sm
+                               text-gray-500
+                               mt-2">
+
+                        Start by adding your first transaction.
+
+                    </p>
+
+
+                    <a
+                        href="{{ url_for('transactions.add_transaction') }}"
+                        class="inline-block
+                               mt-5
+                               px-5 py-3
+                               bg-gray-900
+                               text-white
+                               rounded-xl
+                               text-sm">
+
+                        Add Transaction
+
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+
+        </div>
+
+
+    </main>
+
+</div>
+
+
+</body>
+
+</html>

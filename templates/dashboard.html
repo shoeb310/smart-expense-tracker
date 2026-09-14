@@ -78,7 +78,7 @@
 
             <!-- Transactions -->
 
-            <a href="#"
+            <a href="{{ url_for('transactions.list_transactions') }}"
                class="flex items-center gap-3
                       px-3 py-3 rounded-xl
                       text-gray-500
@@ -97,7 +97,7 @@
 
             <!-- Add Transaction -->
 
-            href="{{ url_for('transactions.add_transaction') }}"
+            <a href="{{ url_for('transactions.add_transaction') }}"
                class="flex items-center gap-3
                       px-3 py-3 rounded-xl
                       text-gray-500
