@@ -228,9 +228,12 @@ def add_transaction():
     connection.close()
 
 
+    default_date = request.args.get("date", "")
+
     return render_template(
         "add_transaction.html",
-        categories=categories
+        categories=categories,
+        default_date=default_date
     )
 
 

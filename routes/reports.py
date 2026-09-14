@@ -168,6 +168,8 @@ def reports():
     cursor.close()
     connection.close()
 
+    currency = session.get("currency", "₹")
+
     return render_template(
         "reports.html",
         total_income=total_income,
@@ -176,5 +178,6 @@ def reports():
         category_data=category_data,
         monthly_data=monthly_data,
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        currency=currency
     )
