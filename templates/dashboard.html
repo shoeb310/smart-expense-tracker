@@ -1,1119 +1,750 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
+{% block title %}Dashboard - Spendly{% endblock %}
 
-    <meta charset="UTF-8">
+{% block content %}
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
 
-    <title>Dashboard - Spendly</title>
+            <!-- ================================================= -->
+            <!-- HEADER -->
+            <!-- ================================================= -->
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+            <!-- ================================================= -->
+            <!-- HEADER -->
+            <!-- ================================================= -->
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ["Inter", "Segoe UI", "sans-serif"]
+            <div class="flex items-start justify-between mb-8">
+
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                        Welcome back, {{ session.get("user_name", "User") }}! 👋
+                    </h1>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">
+                        Here's your financial overview for today.
+                    </p>
+                </div>
+
+                <!-- HEADER ACTIONS -->
+                <div class="flex items-center gap-3">
+                    <button class="bg-white dark:bg-[#16181d] border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 shadow-sm btn-hover">
+                        📅 September 2026
+                    </button>
+
+                    <a href="{{ url_for('settings.export_csv') }}"
+                       class="bg-white dark:bg-[#16181d] border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 shadow-sm btn-hover flex items-center gap-1.5">
+                        <span>📥</span> Export
+                    </a>
+
+                    <!-- User avatar -->
+                    <div class="w-10 h-10 rounded-full bg-lime-300 dark:bg-lime-400 text-gray-900 flex items-center justify-center font-bold shadow-xs">
+                        {{ session.get("user_name", "U")[0]|upper }}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ================================================= -->
+            <!-- DASHBOARD GRID -->
+            <!-- ================================================= -->
+
+            <div class="grid grid-cols-12 gap-4">
+
+                <!-- ================================================= -->
+                <!-- INCOME CARD -->
+                <!-- ================================================= -->
+
+                <div class="col-span-12 lg:col-span-3 bg-lime-300 dark:bg-lime-400 text-gray-950 rounded-2xl p-6 min-h-[145px] shadow-sm">
+                    <div class="flex items-center gap-2 text-sm font-semibold">
+                        <div class="w-7 h-7 rounded-lg bg-black/10 flex items-center justify-center font-bold">
+                            {{ currency }}
+                        </div>
+                        Total Income
+                    </div>
+
+                    <div class="text-3xl font-bold mt-5 text-gray-950">
+                        {{ currency }}{{ "%.2f"|format(total_income) }}
+                    </div>
+
+                    <div class="mt-3 text-xs flex items-center">
+                        <span class="bg-black/10 px-2 py-1 rounded-md font-semibold text-gray-900">
+                            ↗ 12.5%
+                        </span>
+                        <span class="ml-1 text-gray-800 font-medium">this month</span>
+                    </div>
+                </div>
+
+                <!-- ================================================= -->
+                <!-- EXPENSE CARD -->
+                <!-- ================================================= -->
+
+                <div class="col-span-12 lg:col-span-3 bg-white dark:bg-[#16181d] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 min-h-[145px] card-hover">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <div class="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                            {{ currency }}
+                        </div>
+                        Total Expense
+                    </div>
+
+                    <div class="text-3xl font-bold mt-5 text-gray-900 dark:text-white">
+                        {{ currency }}{{ "%.2f"|format(total_expense) }}
+                    </div>
+
+                    <div class="mt-3 text-xs flex items-center">
+                        <span class="bg-green-100 dark:bg-emerald-950/60 text-green-700 dark:text-emerald-400 px-2 py-1 rounded-md font-semibold">
+                            ↓ 8.2%
+                        </span>
+                        <span class="ml-1 text-gray-500 dark:text-gray-400">vs last month</span>
+                    </div>
+                </div>
+
+
+
+                <!-- ================================================= -->
+                <!-- CALENDAR -->
+                <!-- ================================================= -->
+                <div class="col-span-12 lg:col-span-6 lg:row-span-2 bg-white dark:bg-[#16181d] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 flex flex-col justify-between card-hover">
+                    <div>
+                        <div class="flex items-center justify-between mb-5">
+                            <div class="flex items-center gap-2">
+                                <h2 class="font-bold text-gray-900 dark:text-white">Calendar</h2>
+                                <button id="calTodayBtn" type="button" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-lime-100 dark:bg-lime-950/60 text-lime-800 dark:text-lime-300 rounded-full hover:bg-lime-200 dark:hover:bg-lime-900/80 transition btn-hover" title="Jump to Today">
+                                    Today
+                                </button>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/80 p-1 rounded-xl border border-gray-100 dark:border-gray-700/60">
+                                <button id="calPrevMonth" type="button" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition shadow-none hover:shadow-sm font-bold text-xs" title="Previous Month">
+                                    ‹
+                                </button>
+                                <span id="calCurrentMonthLabel" class="text-xs font-semibold px-2 text-gray-800 dark:text-gray-200 min-w-[110px] text-center select-none">
+                                    September 2026
+                                </span>
+                                <button id="calNextMonth" type="button" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition shadow-none hover:shadow-sm font-bold text-xs" title="Next Month">
+                                    ›
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- WEEK DAYS -->
+                        <div class="grid grid-cols-7 text-center text-[11px] font-semibold text-gray-400 dark:text-gray-500 mb-3 uppercase tracking-wider">
+                            <span>Sun</span>
+                            <span>Mon</span>
+                            <span>Tue</span>
+                            <span>Wed</span>
+                            <span>Thu</span>
+                            <span>Fri</span>
+                            <span>Sat</span>
+                        </div>
+
+                        <!-- CALENDAR DAYS CONTAINER -->
+                        <div id="calDaysGrid" class="grid grid-cols-7 gap-y-2 text-center text-xs min-h-[220px]">
+                            <!-- Populated dynamically via JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- CALENDAR FOOTER -->
+                    <div class="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Income
+                            </span>
+                            <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                                <span class="w-2 h-2 rounded-full bg-orange-400"></span> Expense
+                            </span>
+                        </div>
+
+                        <div class="text-gray-500 dark:text-gray-400">
+                            Transactions this month: <span id="calTransactionsCount" class="font-bold text-gray-900 dark:text-white">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================================================= -->
+                <!-- BALANCE CARD -->
+                <!-- ================================================= -->
+
+                <div class="col-span-12 lg:col-span-3 bg-white dark:bg-[#16181d] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 min-h-[145px] card-hover">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <div class="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                            ↔
+                        </div>
+                        Current Balance
+                    </div>
+
+                    <div class="text-3xl font-bold mt-5 text-gray-900 dark:text-white">
+                        {{ currency }}{{ "%.2f"|format(balance) }}
+                    </div>
+
+                    <div class="mt-3 text-xs flex items-center">
+                        <span class="bg-green-100 dark:bg-emerald-950/60 text-green-700 dark:text-emerald-400 px-2 py-1 rounded-md font-semibold">
+                            Healthy
+                        </span>
+                        <span class="ml-1 text-gray-500 dark:text-gray-400">available balance</span>
+                    </div>
+                </div>
+
+                <!-- ================================================= -->
+                <!-- SAVINGS CARD -->
+                <!-- ================================================= -->
+
+                <div class="col-span-12 lg:col-span-3 bg-white dark:bg-[#16181d] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 min-h-[145px] card-hover">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <div class="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                            %
+                        </div>
+                        Savings Rate
+                    </div>
+
+                    <div class="text-3xl font-bold mt-5 text-gray-900 dark:text-white">
+                        {{ "%.1f"|format(savings_percentage) }}%
+                    </div>
+
+                    <div class="mt-3 text-xs flex items-center">
+                        <span class="bg-green-100 dark:bg-emerald-950/60 text-green-700 dark:text-emerald-400 px-2 py-1 rounded-md font-semibold">
+                            ↗ 4.1%
+                        </span>
+                        <span class="ml-1 text-gray-500 dark:text-gray-400">vs last month</span>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="col-span-12 lg:col-span-6 bg-white dark:bg-[#16181d] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between mb-5">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                Recent Transactions
+                            </h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Your latest financial activity
+                            </p>
+                        </div>
+
+                        <a href="{{ url_for('transactions.list_transactions') }}"
+                            class="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-lime-400 dark:hover:text-lime-300 transition">
+                            View all
+                        </a>
+                    </div>
+
+                    {% if recent_transactions %}
+                    <div class="space-y-4">
+                        {% for transaction in recent_transactions %}
+                        <div class="flex items-center justify-between p-1.5 rounded-xl hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold
+                        {% if transaction.type == 'Income' %}
+                            bg-green-50 text-green-600 dark:bg-emerald-950/60 dark:text-emerald-400
+                        {% else %}
+                            bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400
+                        {% endif %}">
+                                    {% if transaction.type == 'Income' %}
+                                    ↑
+                                    {% else %}
+                                    ↓
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    <p class="font-medium text-gray-900 dark:text-gray-200">
+                                        {{ transaction.description or transaction.category }}
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ transaction.category }} · {{ transaction.transaction_date }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <p class="font-semibold
+                    {% if transaction.type == 'Income' %}
+                        text-green-600 dark:text-emerald-400
+                    {% else %}
+                        text-red-600 dark:text-red-400
+                    {% endif %}">
+                                {% if transaction.type == 'Income' %}+{% else %}-{% endif %}{{ currency }}{{ "%.2f"|format(transaction.amount) }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-10">
+                        <p class="text-gray-500 dark:text-gray-400">
+                            No transactions yet.
+                        </p>
+                        <a href="{{ url_for('transactions.add_transaction') }}"
+                            class="inline-block mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-lime-400 dark:hover:text-lime-300">
+                            Add your first transaction
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Expense Categories -->
+                <div class="col-span-12 lg:col-span-6 bg-white dark:bg-[#16181d] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 card-hover">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Expense Categories
+                    </h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-5">
+                        Where your money is going
+                    </p>
+
+                    {% if expense_categories %}
+                    <div class="space-y-4">
+                        {% set max_expense = expense_categories[0].total %}
+                        {% for item in expense_categories %}
+                        {% set percentage = (item.total / max_expense * 100) if max_expense > 0 else 0 %}
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ item.category }}
+                                </span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ currency }}{{ "%.2f"|format(item.total) }}
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+                                <div class="bg-indigo-500 dark:bg-indigo-400 h-2 rounded-full" style="width: {{ percentage }}%;"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
+                        No expense data available.
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- ================================================= -->
+                <!-- INCOME VS EXPENSE -->
+                <!-- ================================================= -->
+                <div class="col-span-12 lg:col-span-8 bg-white dark:bg-[#16181d] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 min-h-[350px] flex flex-col justify-between card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="font-bold text-gray-900 dark:text-white text-base">Income vs Expense</h2>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Monthly overview of your financial cashflow</p>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs">
+                            <span class="flex items-center gap-1.5 font-medium text-gray-600 dark:text-gray-300">
+                                <span class="w-2.5 h-2.5 rounded-sm bg-lime-400"></span> Income
+                            </span>
+                            <span class="flex items-center gap-1.5 font-medium text-gray-600 dark:text-gray-300">
+                                <span class="w-2.5 h-2.5 rounded-sm bg-orange-400"></span> Expense
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full h-64 flex-1">
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- ================================================= -->
+                <!-- EXPENSE CATEGORIES -->
+                <!-- ================================================= -->
+                <div class="col-span-12 lg:col-span-4 bg-white dark:bg-[#16181d] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 min-h-[350px] flex flex-col justify-between card-hover">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <h2 class="font-bold text-gray-900 dark:text-white text-base">Expense Categories</h2>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Where your money is going</p>
+                        </div>
+                        <span class="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-700">All Time</span>
+                    </div>
+
+                    {% if expense_chart and expense_chart|length > 0 %}
+                    <div class="relative flex items-center justify-center my-3">
+                        <div class="w-44 h-44 relative">
+                            <canvas id="expenseDonutChart"></canvas>
+                            <!-- Donut center total -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                                <span id="donutCenterLabel" class="text-[11px] text-gray-400 dark:text-gray-500 font-medium truncate max-w-[85px] leading-tight">Total</span>
+                                <span id="donutCenterVal" class="text-sm font-bold text-gray-900 dark:text-white leading-tight mt-0.5">{{ currency }}{{ "%.0f"|format(total_expense) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Clean Legend -->
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-2 pt-2 border-t border-gray-50 dark:border-gray-800 max-h-24 overflow-y-auto">
+                        {% for item in expense_chart %}
+                        <div class="flex items-center justify-between text-xs py-0.5">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: {{ item.color }};"></span>
+                                <span class="text-gray-600 dark:text-gray-400 truncate text-[11px]">{{ item.category }}</span>
+                            </div>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200 text-[11px] ml-1">{{ "%.0f"|format(item.percentage) }}%</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="flex-1 flex flex-col items-center justify-center text-center py-10">
+                        <div class="w-12 h-12 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-300 dark:text-gray-600 text-xl mb-2">📊</div>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">No expense records yet.</p>
+                        <a href="{{ url_for('transactions.add_transaction') }}" class="text-xs text-indigo-600 dark:text-lime-400 hover:underline font-medium mt-2">
+                            Add an expense
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+<!-- DAY TRANSACTIONS POPUP MODAL -->
+<div id="dayModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#16181d] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-800 animate-fade-in">
+        <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3 mb-4">
+            <div>
+                <h3 id="dayModalDate" class="text-base font-bold text-gray-900 dark:text-white"></h3>
+                <p id="dayModalSummary" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"></p>
+            </div>
+            <button type="button" onclick="closeDayModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-lg">&times;</button>
+        </div>
+
+        <div id="dayModalList" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <!-- Day transactions loaded dynamically -->
+        </div>
+
+        <div class="mt-5 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <a id="dayModalAddLink" href="{{ url_for('transactions.add_transaction') }}" class="px-4 py-2 bg-[#17191c] text-white dark:bg-lime-400 dark:text-gray-950 text-xs font-semibold rounded-xl hover:bg-black dark:hover:bg-lime-300 transition btn-hover flex items-center gap-1.5">
+                <span>＋</span> Add on this day
+            </a>
+            <button type="button" onclick="closeDayModal()" class="px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // ==========================================
+    // 1. DYNAMIC INTERACTIVE CALENDAR
+    // ==========================================
+    let calCurrentDate = new Date();
+    const calendarEvents = {{ calendar_events|tojson|safe }};
+    const eventsByDate = {};
+
+    calendarEvents.forEach(evt => {
+        if (!eventsByDate[evt.date]) eventsByDate[evt.date] = [];
+        eventsByDate[evt.date].push(evt);
+    });
+
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    function renderCalendar() {
+        const year = calCurrentDate.getFullYear();
+        const month = calCurrentDate.getMonth();
+        document.getElementById('calCurrentMonthLabel').textContent = `${monthNames[month]} ${year}`;
+
+        const today = new Date();
+        const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        const grid = document.getElementById('calDaysGrid');
+        grid.innerHTML = '';
+
+        // Empty cells before 1st of month
+        for (let i = 0; i < firstDayIndex; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'h-8';
+            grid.appendChild(emptyCell);
+        }
+
+        let monthlyTxCount = 0;
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'h-8 flex flex-col items-center justify-center relative cursor-pointer select-none group';
+
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayEvents = eventsByDate[dateStr] || [];
+            monthlyTxCount += dayEvents.length;
+
+            const isToday = isCurrentMonth && today.getDate() === day;
+
+            const numCircle = document.createElement('div');
+            let circleClasses = 'w-7 h-7 rounded-full flex items-center justify-center font-medium transition text-xs ';
+            if (isToday) {
+                circleClasses += 'bg-[#17191c] text-white dark:bg-lime-400 dark:text-gray-950 font-bold shadow-xs';
+            } else if (dayEvents.length > 0) {
+                circleClasses += 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold';
+            } else {
+                circleClasses += 'hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-400';
+            }
+            numCircle.className = circleClasses;
+            numCircle.textContent = day;
+            dayCell.appendChild(numCircle);
+
+            // Indicators
+            if (dayEvents.length > 0) {
+                const hasIncome = dayEvents.some(e => e.type === 'Income');
+                const hasExpense = dayEvents.some(e => e.type === 'Expense');
+                const dots = document.createElement('div');
+                dots.className = 'flex items-center gap-0.5 mt-0.5';
+
+                if (hasIncome) {
+                    const d = document.createElement('span');
+                    d.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+                    dots.appendChild(d);
+                }
+                if (hasExpense) {
+                    const d = document.createElement('span');
+                    d.className = 'w-1.5 h-1.5 rounded-full bg-orange-400';
+                    dots.appendChild(d);
+                }
+                dayCell.appendChild(dots);
+            }
+
+            dayCell.addEventListener('click', () => {
+                openDayModal(dateStr, day, monthNames[month], year, dayEvents);
+            });
+
+            grid.appendChild(dayCell);
+        }
+
+        document.getElementById('calTransactionsCount').textContent = monthlyTxCount;
+    }
+
+    document.getElementById('calPrevMonth').addEventListener('click', () => {
+        calCurrentDate.setMonth(calCurrentDate.getMonth() - 1);
+        renderCalendar();
+    });
+
+    document.getElementById('calNextMonth').addEventListener('click', () => {
+        calCurrentDate.setMonth(calCurrentDate.getMonth() + 1);
+        renderCalendar();
+    });
+
+    document.getElementById('calTodayBtn').addEventListener('click', () => {
+        calCurrentDate = new Date();
+        renderCalendar();
+    });
+
+    renderCalendar();
+
+    // ==========================================
+    // 2. DAY DETAILS MODAL
+    // ==========================================
+    window.openDayModal = function(dateStr, day, monthName, year, events) {
+        document.getElementById('dayModalDate').textContent = `${day} ${monthName} ${year}`;
+        const modal = document.getElementById('dayModal');
+        const list = document.getElementById('dayModalList');
+        const summary = document.getElementById('dayModalSummary');
+        const addLink = document.getElementById('dayModalAddLink');
+        addLink.href = `{{ url_for('transactions.add_transaction') }}?date=${dateStr}`;
+
+        list.innerHTML = '';
+        if (!events || events.length === 0) {
+            summary.textContent = 'No transactions recorded on this day.';
+            list.innerHTML = `
+                <div class="py-6 text-center text-xs text-gray-400 dark:text-gray-500">
+                    No activity recorded for this date.
+                </div>
+            `;
+        } else {
+            let inc = 0, exp = 0;
+            events.forEach(e => {
+                if (e.type === 'Income') inc += e.amount;
+                else exp += e.amount;
+
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/70 border border-gray-100 dark:border-gray-700/60 text-xs';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${e.type === 'Income' ? 'bg-green-100 dark:bg-emerald-950/70 text-green-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-400'}">
+                            ${e.type === 'Income' ? '↑' : '↓'}
+                        </span>
+                        <div>
+                            <div class="font-semibold text-gray-900 dark:text-gray-100">${e.description}</div>
+                            <div class="text-[10px] text-gray-400 dark:text-gray-500">${e.category}</div>
+                        </div>
+                    </div>
+                    <div class="font-bold ${e.type === 'Income' ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}">
+                        ${e.type === 'Income' ? '+' : '-'}{{ currency }}${e.amount.toFixed(2)}
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+            summary.textContent = `${events.length} transaction(s) · Income: {{ currency }}${inc.toFixed(2)} · Expense: {{ currency }}${exp.toFixed(2)}`;
+        }
+
+        modal.classList.remove('hidden');
+    };
+
+    window.closeDayModal = function() {
+        document.getElementById('dayModal').classList.add('hidden');
+    };
+
+    // ==========================================
+    // 3. ANIMATED INCOME VS EXPENSE BAR CHART
+    // ==========================================
+    const monthlyLabels = {{ formatted_monthly_data|map(attribute='short_label')|list|tojson|safe }};
+    const monthlyIncome = {{ formatted_monthly_data|map(attribute='income')|list|tojson|safe }};
+    const monthlyExpense = {{ formatted_monthly_data|map(attribute='expense')|list|tojson|safe }};
+
+    let incExpChartInstance = null;
+    let donutChartInstance = null;
+
+    function isDarkMode() {
+        return document.documentElement.classList.contains('dark');
+    }
+
+    const incExpCanvas = document.getElementById('incomeExpenseChart');
+    if (incExpCanvas) {
+        incExpChartInstance = new Chart(incExpCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels.length > 0 ? monthlyLabels : ['Current'],
+                datasets: [
+                    {
+                        label: 'Income',
+                        data: monthlyIncome.length > 0 ? monthlyIncome : [{{ total_income }}],
+                        backgroundColor: '#a3e635', // lime-400
+                        hoverBackgroundColor: '#84cc16',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.7
+                    },
+                    {
+                        label: 'Expense',
+                        data: monthlyExpense.length > 0 ? monthlyExpense : [{{ total_expense }}],
+                        backgroundColor: '#fb923c', // orange-400
+                        hoverBackgroundColor: '#f97316',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.7
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 850,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#17191c',
+                        titleFont: { size: 12, family: 'Inter' },
+                        bodyFont: { size: 12, family: 'Inter' },
+                        padding: 10,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(ctx) {
+                                return `${ctx.dataset.label}: {{ currency }}${Number(ctx.parsed.y).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: isDarkMode() ? '#9ca3af' : '#9ca3af', font: { size: 11, family: 'Inter' } }
+                    },
+                    y: {
+                        grid: { color: isDarkMode() ? 'rgba(255, 255, 255, 0.06)' : '#f3f4f6' },
+                        border: { display: false },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: { size: 11, family: 'Inter' },
+                            callback: function(val) {
+                                return '{{ currency }}' + val;
+                            }
+                        }
                     }
                 }
             }
+        });
+    }
+
+    // ==========================================
+    // 4. ANIMATED EXPENSE CATEGORIES DOUGHNUT
+    // ==========================================
+    {% if expense_chart and expense_chart|length > 0 %}
+    const donutCanvas = document.getElementById('expenseDonutChart');
+    if (donutCanvas) {
+        const catLabels = {{ expense_chart|map(attribute='category')|list|tojson|safe }};
+        const catTotals = {{ expense_chart|map(attribute='total')|list|tojson|safe }};
+        const catColors = {{ expense_chart|map(attribute='color')|list|tojson|safe }};
+
+        donutChartInstance = new Chart(donutCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catTotals,
+                    backgroundColor: catColors,
+                    borderWidth: 3,
+                    borderColor: isDarkMode() ? '#16181d' : '#ffffff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                animation: {
+                    animateRotate: true,
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#17191c',
+                        titleFont: { size: 12, family: 'Inter' },
+                        bodyFont: { size: 12, family: 'Inter' },
+                        padding: 10,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(ctx) {
+                                const val = ctx.parsed;
+                                const tot = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = tot > 0 ? Math.round((val / tot) * 100) : 0;
+                                return `${ctx.label}: {{ currency }}${val.toFixed(2)} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                onHover: (evt, chartEl) => {
+                    const centerLabel = document.getElementById('donutCenterLabel');
+                    const centerVal = document.getElementById('donutCenterVal');
+                    if (chartEl.length > 0) {
+                        const idx = chartEl[0].index;
+                        centerLabel.textContent = catLabels[idx];
+                        centerVal.textContent = '{{ currency }}' + catTotals[idx].toFixed(0);
+                    } else {
+                        centerLabel.textContent = 'Total';
+                        centerVal.textContent = '{{ currency }}{{ "%.0f"|format(total_expense) }}';
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
+
+    // ==========================================
+    // 5. CHART THEME CHANGE LISTENER
+    // ==========================================
+    window.addEventListener('themechange', function(e) {
+        const dark = e.detail.isDark;
+        if (incExpChartInstance) {
+            incExpChartInstance.options.scales.y.grid.color = dark ? 'rgba(255, 255, 255, 0.06)' : '#f3f4f6';
+            incExpChartInstance.update();
         }
-    </script>
-
-</head>
-
-
-<body class="bg-[#f5f7f8] text-[#17191c]">
-
-<div class="min-h-screen flex">
-
-
-    <!-- ================================================= -->
-    <!-- SIDEBAR -->
-    <!-- ================================================= -->
-
-    <aside class="w-60 bg-white border-r border-gray-100
-                  min-h-screen flex flex-col
-                  px-4 py-7">
-
-
-        <!-- LOGO -->
-
-        <div class="flex items-center gap-3 px-3 mb-10">
-
-            <div class="w-7 h-7 bg-lime-300
-                        rounded-lg">
-            </div>
-
-            <span class="text-xl font-bold">
-                Spendly
-            </span>
-
-        </div>
-
-
-        <!-- NAVIGATION -->
-
-        <nav class="space-y-2">
-
-
-            <!-- Dashboard -->
-
-            <a href="{{ url_for('dashboard') }}"
-               class="flex items-center gap-3 px-3 py-3 rounded-xl bg-[#17191c] text-white text-sm font-medium">
-
-                <span class="text-lg">
-                    ⌂
-                </span>
-
-                Dashboard
-
-            </a>
-
-
-            <!-- Transactions -->
-
-            <a href="#"
-               class="flex items-center gap-3
-                      px-3 py-3 rounded-xl
-                      text-gray-500
-                      hover:bg-gray-50
-                      hover:text-gray-900
-                      transition">
-
-                <span class="text-lg">
-                    ↕
-                </span>
-
-                Transactions
-
-            </a>
-
-
-            <!-- Add Transaction -->
-
-            href="{{ url_for('transactions.add_transaction') }}"
-               class="flex items-center gap-3
-                      px-3 py-3 rounded-xl
-                      text-gray-500
-                      hover:bg-gray-50
-                      hover:text-gray-900
-                      transition">
-
-                <span class="text-lg">
-                    ＋
-                </span>
-
-                Add Transaction
-
-            </a>
-
-
-            <!-- Reports -->
-
-            <a href="#"
-               class="flex items-center gap-3
-                      px-3 py-3 rounded-xl
-                      text-gray-500
-                      hover:bg-gray-50
-                      hover:text-gray-900
-                      transition">
-
-                <span class="text-lg">
-                    ▥
-                </span>
-
-                Reports
-
-            </a>
-
-
-            <!-- Settings -->
-
-            <a href="#"
-               class="flex items-center gap-3
-                      px-3 py-3 rounded-xl
-                      text-gray-500
-                      hover:bg-gray-50
-                      hover:text-gray-900
-                      transition">
-
-                <span class="text-lg">
-                    ⚙
-                </span>
-
-                Settings
-
-            </a>
-
-        </nav>
-
-
-        <!-- BOTTOM NAVIGATION -->
-
-        <div class="mt-auto space-y-2">
-
-
-            <!-- Help -->
-
-            <a href="#"
-               class="flex items-center gap-3
-                      px-3 py-3 rounded-xl
-                      text-gray-500
-                      hover:bg-gray-50
-                      hover:text-gray-900
-                      transition">
-
-                <span>
-                    ?
-                </span>
-
-                Help
-
-            </a>
-
-
-            <!-- Logout -->
-
-            <a href="{{ url_for('auth.logout') }}"
-               class="flex items-center gap-3
-                      px-3 py-3 rounded-xl
-                      text-gray-500
-                      hover:bg-red-50
-                      hover:text-red-600
-                      transition">
-
-                <span>
-                    ↪
-                </span>
-
-                Logout
-
-            </a>
-
-        </div>
-
-    </aside>
-
-
-
-    <!-- ================================================= -->
-    <!-- MAIN CONTENT -->
-    <!-- ================================================= -->
-
-    <main class="flex-1 p-8 overflow-x-hidden">
-
-
-        <!-- ================================================= -->
-        <!-- HEADER -->
-        <!-- ================================================= -->
-
-        <div class="flex items-start justify-between
-                    mb-8">
-
-
-            <div>
-
-                <h1 class="text-3xl font-bold tracking-tight">
-
-                    Welcome back,
-                    {{ session.get("user_name", "User") }}!
-                    👋
-
-                </h1>
-
-                <p class="text-gray-500 text-sm mt-2">
-
-                    Here's your financial overview for today.
-
-                </p>
-
-            </div>
-
-
-            <!-- HEADER ACTIONS -->
-
-            <div class="flex items-center gap-3">
-
-
-                <button
-                    class="bg-white border border-gray-100
-                           rounded-xl px-4 py-2.5
-                           text-sm text-gray-600
-                           shadow-sm">
-
-                    📅 September 2026
-
-                </button>
-
-
-                <button
-                    class="bg-white border border-gray-100
-                           rounded-xl px-4 py-2.5
-                           text-sm text-gray-600
-                           shadow-sm">
-
-                    Export
-
-                </button>
-
-
-                <!-- User avatar -->
-
-                <div
-                    class="w-10 h-10 rounded-full
-                           bg-lime-300
-                           flex items-center justify-center
-                           font-bold">
-
-                    {{ session.get("user_name", "U")[0]|upper }}
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- ================================================= -->
-        <!-- DASHBOARD GRID -->
-        <!-- ================================================= -->
-
-        <div class="grid grid-cols-12 gap-4">
-
-
-            <!-- ================================================= -->
-            <!-- INCOME CARD -->
-            <!-- ================================================= -->
-
-            <div
-                class="col-span-12 lg:col-span-3
-                       bg-lime-300
-                       rounded-2xl p-6
-                       min-h-[145px]">
-
-                <div class="flex items-center gap-2
-                            text-sm font-semibold">
-
-                    <div
-                        class="w-7 h-7 rounded-lg
-                               bg-white/60
-                               flex items-center justify-center">
-
-                        ₹
-
-                    </div>
-
-                    Total Income
-
-                </div>
-
-
-                <div class="text-3xl font-bold mt-5">
-
-                    ₹30,000
-
-                </div>
-
-
-                <div class="mt-3 text-xs">
-
-                    <span
-                        class="bg-white/70
-                               px-2 py-1
-                               rounded-md
-                               font-semibold">
-
-                        ↗ 12.5%
-
-                    </span>
-
-                    <span class="ml-1 text-gray-700">
-
-                        this month
-
-                    </span>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- ================================================= -->
-            <!-- EXPENSE CARD -->
-            <!-- ================================================= -->
-
-            <div
-                class="col-span-12 lg:col-span-3
-                       bg-white
-                       rounded-2xl p-6
-                       border border-gray-100
-                       min-h-[145px]">
-
-                <div class="flex items-center gap-2
-                            text-sm font-semibold">
-
-                    <div
-                        class="w-7 h-7 rounded-lg
-                               border border-gray-200
-                               flex items-center justify-center">
-
-                        ₹
-
-                    </div>
-
-                    Total Expense
-
-                </div>
-
-
-                <div class="text-3xl font-bold mt-5">
-
-                    ₹12,500
-
-                </div>
-
-
-                <div class="mt-3 text-xs">
-
-                    <span
-                        class="bg-green-100
-                               text-green-700
-                               px-2 py-1
-                               rounded-md
-                               font-semibold">
-
-                        ↓ 8.2%
-
-                    </span>
-
-                    <span class="ml-1 text-gray-500">
-
-                        vs last month
-
-                    </span>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- ================================================= -->
-            <!-- CALENDAR -->
-            <!-- ================================================= -->
-
-            <div
-                class="col-span-12 lg:col-span-6
-                       lg:row-span-2
-                       bg-white
-                       rounded-2xl p-6
-                       border border-gray-100">
-
-                <div class="flex items-center
-                            justify-between mb-6">
-
-                    <h2 class="font-bold">
-
-                        Calendar
-
-                    </h2>
-
-
-                    <select
-                        class="border border-gray-200
-                               rounded-lg
-                               px-3 py-2
-                               text-xs
-                               bg-white">
-
-                        <option>
-                            September 2026
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <!-- WEEK DAYS -->
-
-                <div
-                    class="grid grid-cols-7
-                           text-center
-                           text-xs
-                           text-gray-400
-                           mb-3">
-
-                    <span>S</span>
-                    <span>M</span>
-                    <span>T</span>
-                    <span>W</span>
-                    <span>T</span>
-                    <span>F</span>
-                    <span>S</span>
-
-                </div>
-
-
-                <!-- CALENDAR DAYS -->
-
-                <div
-                    class="grid grid-cols-7
-                           gap-y-3
-                           text-center
-                           text-xs">
-
-                    <span></span>
-                    <span></span>
-                    <span>1</span>
-                    <span>2</span>
-                    <span>3</span>
-                    <span>4</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-lime-300
-                               flex items-center
-                               justify-center">
-
-                        5
-
-                    </span>
-
-
-                    <span>6</span>
-
-                    <span>7</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-lime-300
-                               flex items-center
-                               justify-center">
-
-                        8
-
-                    </span>
-
-                    <span>9</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-orange-400
-                               text-white
-                               flex items-center
-                               justify-center">
-
-                        10
-
-                    </span>
-
-                    <span>11</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-gray-900
-                               text-white
-                               flex items-center
-                               justify-center">
-
-                        12
-
-                    </span>
-
-
-                    <span>13</span>
-
-                    <span>14</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-lime-300
-                               flex items-center
-                               justify-center">
-
-                        15
-
-                    </span>
-
-                    <span>16</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-lime-300
-                               flex items-center
-                               justify-center">
-
-                        17
-
-                    </span>
-
-                    <span>18</span>
-                    <span>19</span>
-
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-lime-300
-                               flex items-center
-                               justify-center">
-
-                        20
-
-                    </span>
-
-                    <span>21</span>
-                    <span>22</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-lime-300
-                               flex items-center
-                               justify-center">
-
-                        23
-
-                    </span>
-
-                    <span>24</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-orange-400
-                               text-white
-                               flex items-center
-                               justify-center">
-
-                        25
-
-                    </span>
-
-                    <span>26</span>
-
-                    <span>27</span>
-                    <span>28</span>
-
-                    <span
-                        class="w-8 h-8 mx-auto
-                               rounded-full
-                               bg-lime-300
-                               flex items-center
-                               justify-center">
-
-                        29
-
-                    </span>
-
-                    <span>30</span>
-
-                </div>
-
-
-                <!-- CALENDAR FOOTER -->
-
-                <div class="mt-7 pt-5
-                            border-t border-gray-100
-                            flex items-center
-                            justify-between">
-
-                    <span class="text-xs text-gray-500">
-
-                        Transactions this month
-
-                    </span>
-
-                    <span class="font-semibold text-sm">
-
-                        18
-
-                    </span>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- ================================================= -->
-            <!-- BALANCE CARD -->
-            <!-- ================================================= -->
-
-            <div
-                class="col-span-12 lg:col-span-3
-                       bg-white
-                       rounded-2xl p-6
-                       border border-gray-100
-                       min-h-[145px]">
-
-                <div class="flex items-center gap-2
-                            text-sm font-semibold">
-
-                    <div
-                        class="w-7 h-7 rounded-lg
-                               border border-gray-200
-                               flex items-center justify-center">
-
-                        ↔
-
-                    </div>
-
-                    Current Balance
-
-                </div>
-
-
-                <div class="text-3xl font-bold mt-5">
-
-                    ₹17,500
-
-                </div>
-
-
-                <div class="mt-3 text-xs">
-
-                    <span
-                        class="bg-green-100
-                               text-green-700
-                               px-2 py-1
-                               rounded-md
-                               font-semibold">
-
-                        Healthy
-
-                    </span>
-
-                    <span class="ml-1 text-gray-500">
-
-                        available balance
-
-                    </span>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- ================================================= -->
-            <!-- SAVINGS CARD -->
-            <!-- ================================================= -->
-
-            <div
-                class="col-span-12 lg:col-span-3
-                       bg-white
-                       rounded-2xl p-6
-                       border border-gray-100
-                       min-h-[145px]">
-
-                <div class="flex items-center gap-2
-                            text-sm font-semibold">
-
-                    <div
-                        class="w-7 h-7 rounded-lg
-                               border border-gray-200
-                               flex items-center justify-center">
-
-                        %
-
-                    </div>
-
-                    Savings Rate
-
-                </div>
-
-
-                <div class="text-3xl font-bold mt-5">
-
-                    58.3%
-
-                </div>
-
-
-                <div class="mt-3 text-xs">
-
-                    <span
-                        class="bg-green-100
-                               text-green-700
-                               px-2 py-1
-                               rounded-md
-                               font-semibold">
-
-                        ↗ 4.1%
-
-                    </span>
-
-                    <span class="ml-1 text-gray-500">
-
-                        vs last month
-
-                    </span>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- ================================================= -->
-            <!-- INCOME VS EXPENSE -->
-            <!-- ================================================= -->
-
-            <div
-                class="col-span-12 lg:col-span-8
-                       bg-white
-                       rounded-2xl p-6
-                       border border-gray-100
-                       min-h-[350px]">
-
-                <div class="flex items-center
-                            justify-between mb-8">
-
-                    <h2 class="font-bold">
-
-                        Income vs Expense
-
-                    </h2>
-
-                    <span class="text-xs text-gray-400">
-
-                        Monthly overview
-
-                    </span>
-
-                </div>
-
-
-                <!-- SIMPLE VISUAL CHART -->
-
-                <div
-                    class="h-56 flex items-end
-                           justify-around
-                           border-b border-gray-100
-                           px-5">
-
-                    <!-- January -->
-
-                    <div class="flex items-end
-                                gap-2 h-full">
-
-                        <div
-                            class="w-5
-                                   bg-orange-400
-                                   rounded-t-lg"
-                            style="height: 45%;">
-                        </div>
-
-                        <div
-                            class="w-5
-                                   bg-gray-200
-                                   rounded-t-lg"
-                            style="height: 70%;">
-                        </div>
-
-                    </div>
-
-
-                    <!-- February -->
-
-                    <div class="flex items-end
-                                gap-2 h-full">
-
-                        <div
-                            class="w-5
-                                   bg-orange-400
-                                   rounded-t-lg"
-                            style="height: 65%;">
-                        </div>
-
-                        <div
-                            class="w-5
-                                   bg-gray-200
-                                   rounded-t-lg"
-                            style="height: 50%;">
-                        </div>
-
-                    </div>
-
-
-                    <!-- March -->
-
-                    <div class="flex items-end
-                                gap-2 h-full">
-
-                        <div
-                            class="w-5
-                                   bg-orange-400
-                                   rounded-t-lg"
-                            style="height: 50%;">
-                        </div>
-
-                        <div
-                            class="w-5
-                                   bg-gray-200
-                                   rounded-t-lg"
-                            style="height: 75%;">
-                        </div>
-
-                    </div>
-
-
-                    <!-- April -->
-
-                    <div class="flex items-end
-                                gap-2 h-full">
-
-                        <div
-                            class="w-5
-                                   bg-orange-400
-                                   rounded-t-lg"
-                            style="height: 72%;">
-                        </div>
-
-                        <div
-                            class="w-5
-                                   bg-gray-200
-                                   rounded-t-lg"
-                            style="height: 48%;">
-                        </div>
-
-                    </div>
-
-
-                    <!-- May -->
-
-                    <div class="flex items-end
-                                gap-2 h-full">
-
-                        <div
-                            class="w-5
-                                   bg-orange-400
-                                   rounded-t-lg"
-                            style="height: 80%;">
-                        </div>
-
-                        <div
-                            class="w-5
-                                   bg-gray-200
-                                   rounded-t-lg"
-                            style="height: 55%;">
-                        </div>
-
-                    </div>
-
-
-                    <!-- June -->
-
-                    <div class="flex items-end
-                                gap-2 h-full">
-
-                        <div
-                            class="w-5
-                                   bg-orange-400
-                                   rounded-t-lg"
-                            style="height: 60%;">
-                        </div>
-
-                        <div
-                            class="w-5
-                                   bg-gray-200
-                                   rounded-t-lg"
-                            style="height: 42%;">
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- MONTH LABELS -->
-
-                <div
-                    class="flex justify-around
-                           text-xs text-gray-400
-                           mt-3">
-
-                    <span>Jan</span>
-                    <span>Feb</span>
-                    <span>Mar</span>
-                    <span>Apr</span>
-                    <span>May</span>
-                    <span>Jun</span>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- ================================================= -->
-            <!-- EXPENSE CATEGORIES -->
-            <!-- ================================================= -->
-
-            <div
-                class="col-span-12 lg:col-span-4
-                       bg-white
-                       rounded-2xl p-6
-                       border border-gray-100
-                       min-h-[350px]">
-
-                <div class="flex items-center
-                            justify-between">
-
-                    <h2 class="font-bold">
-
-                        Expense Categories
-
-                    </h2>
-
-                    <span class="text-xs text-gray-400">
-
-                        This month
-
-                    </span>
-
-                </div>
-
-
-                <!-- DONUT -->
-
-                <div class="flex items-center
-                            justify-center
-                            mt-8">
-
-                    <div
-                        class="relative
-                               w-40 h-40
-                               rounded-full"
-                        style="
-                            background:
-                            conic-gradient(
-                                #a78bfa 0 34%,
-                                #fca5a5 34% 57%,
-                                #93c5fd 57% 75%,
-                                #fde68a 75% 100%
-                            );
-                        ">
-
-                        <div
-                            class="absolute
-                                   inset-7
-                                   bg-white
-                                   rounded-full
-                                   flex items-center
-                                   justify-center">
-
-                            <div class="text-center">
-
-                                <div class="text-2xl
-                                            font-bold">
-
-                                    42%
-
-                                </div>
-
-                                <div class="text-xs
-                                            text-gray-400">
-
-                                    Food
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- LEGEND -->
-
-                <div class="grid grid-cols-2
-                            gap-4 mt-7">
-
-                    <div class="flex items-center
-                                gap-2 text-xs">
-
-                        <span
-                            class="w-2 h-2
-                                   rounded-full
-                                   bg-purple-400">
-                        </span>
-
-                        Food
-
-                    </div>
-
-
-                    <div class="flex items-center
-                                gap-2 text-xs">
-
-                        <span
-                            class="w-2 h-2
-                                   rounded-full
-                                   bg-red-300">
-                        </span>
-
-                        Shopping
-
-                    </div>
-
-
-                    <div class="flex items-center
-                                gap-2 text-xs">
-
-                        <span
-                            class="w-2 h-2
-                                   rounded-full
-                                   bg-blue-300">
-                        </span>
-
-                        Bills
-
-                    </div>
-
-
-                    <div class="flex items-center
-                                gap-2 text-xs">
-
-                        <span
-                            class="w-2 h-2
-                                   rounded-full
-                                   bg-yellow-300">
-                        </span>
-
-                        Others
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </main>
-
-</div>
-
-</body>
-
-</html>
+        if (donutChartInstance) {
+            donutChartInstance.data.datasets[0].borderColor = dark ? '#16181d' : '#ffffff';
+            donutChartInstance.update();
+        }
+    });
+</script>
+{% endblock %}

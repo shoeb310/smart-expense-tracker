@@ -5,7 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Login - Smart Expense Tracker</title>
+    <title>Login - Spendly</title>
+
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('spendly_theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
 
     <style>
         * {
@@ -16,78 +28,235 @@
             margin: 0;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: #f5f7fb;
+            color: #111827;
+            padding: 20px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        html.dark body {
+            background: #0f1115;
+            color: #f3f4f6;
+        }
+
+        .auth-nav {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 16px;
+        }
+
+        .theme-toggle-btn {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        html.dark .theme-toggle-btn {
+            background: #16181d;
+            border-color: #23272f;
+            color: #d1d5db;
         }
 
         .container {
-            width: 400px;
+            width: 100%;
+            max-width: 400px;
             padding: 35px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eef0f5;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        html.dark .container {
+            background: #16181d;
+            border-color: #23272f;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #15803d;
+            background: #dcfce7;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+        }
+
+        html.dark .brand-pill {
+            background: rgba(163, 230, 53, 0.15);
+            color: #bef264;
         }
 
         h1 {
-            margin-bottom: 8px;
+            margin: 0 0 6px 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        html.dark h1 {
+            color: #ffffff;
         }
 
         .subtitle {
-            color: #777;
-            margin-bottom: 25px;
+            color: #6b7280;
+            margin: 0 0 24px 0;
+            font-size: 14px;
+        }
+
+        html.dark .subtitle {
+            color: #9ca3af;
         }
 
         label {
             display: block;
             margin-bottom: 6px;
             font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #4b5563;
+        }
+
+        html.dark label {
+            color: #9ca3af;
         }
 
         input {
             width: 100%;
-            padding: 12px;
+            padding: 11px 14px;
             margin-bottom: 18px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            background: #f9fafb;
+            color: #111827;
+            transition: border-color 0.2s, background 0.2s;
         }
 
-        button {
+        input:focus {
+            border-color: #111827;
+            background: #ffffff;
+        }
+
+        html.dark input {
+            background: #0f1115;
+            border-color: #2d333b;
+            color: #ffffff;
+        }
+
+        html.dark input:focus {
+            border-color: #a3e635;
+            background: #14171d;
+        }
+
+        button.btn-primary {
             width: 100%;
             padding: 12px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             background: #111827;
             color: white;
-            font-size: 15px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.btn-primary:hover {
+            background: #000000;
+            transform: translateY(-1px);
+        }
+
+        html.dark button.btn-primary {
+            background: #a3e635;
+            color: #0f1115;
+        }
+
+        html.dark button.btn-primary:hover {
+            background: #bef264;
         }
 
         .register-link {
             text-align: center;
             margin-top: 20px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        html.dark .register-link {
+            color: #9ca3af;
         }
 
         a {
             color: #111827;
             font-weight: 600;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        html.dark a {
+            color: #bef264;
         }
 
         .message {
-            padding: 10px;
-            margin-bottom: 15px;
-            background: #fff3cd;
-            border-radius: 6px;
-            color: #664d03;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            color: #92400e;
+            font-size: 13px;
+        }
+
+        html.dark .message {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.25);
+            color: #fcd34d;
         }
     </style>
 </head>
 
 <body>
 
+    <div class="auth-nav">
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleAuthTheme()">
+            <span id="themeIcon">🌙</span>
+            <span id="themeLabel">Dark</span>
+        </button>
+    </div>
+
     <div class="container">
+
+        <div class="brand-pill">
+            <span>●</span> Spendly
+        </div>
 
         <h1>Welcome Back</h1>
 
@@ -96,21 +265,15 @@
         </p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-
             {% for category, message in messages %}
-
                 <div class="message">
                     {{ message }}
                 </div>
-
             {% endfor %}
-
         {% endwith %}
 
         <form method="POST">
-
             <label for="email">Email</label>
-
             <input
                 type="email"
                 id="email"
@@ -120,7 +283,6 @@
             >
 
             <label for="password">Password</label>
-
             <input
                 type="password"
                 id="password"
@@ -129,10 +291,9 @@
                 required
             >
 
-            <button type="submit">
+            <button type="submit" class="btn-primary">
                 Login
             </button>
-
         </form>
 
         <div class="register-link">
@@ -141,6 +302,22 @@
         </div>
 
     </div>
+
+    <script>
+        function updateToggleBtn() {
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+            document.getElementById('themeLabel').textContent = isDark ? 'Light' : 'Dark';
+        }
+
+        function toggleAuthTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('spendly_theme', isDark ? 'dark' : 'light');
+            updateToggleBtn();
+        }
+
+        updateToggleBtn();
+    </script>
 
 </body>
 
