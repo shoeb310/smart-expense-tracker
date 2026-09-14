@@ -18,10 +18,6 @@ transactions_bp = Blueprint(
 )
 
 
-# ============================================================
-# ADD TRANSACTION
-# ============================================================
-
 @transactions_bp.route("/add", methods=["GET", "POST"])
 def add_transaction():
 
@@ -33,25 +29,73 @@ def add_transaction():
 
     if request.method == "POST":
 
-        transaction_type = request.form["type"]
-        category_id = request.form["category_id"]
-        amount = request.form["amount"]
-        description = request.form["description"].strip()
-        transaction_date = request.form["transaction_date"]
+        transaction_type = request.form.get("type", "").strip()
+        category_id = request.form.get("category_id", "").strip()
+        amount = request.form.get("amount", "").strip()
+        description = request.form.get("description", "").strip()
+        transaction_date = request.form.get("transaction_date", "").strip()
 
-        if not amount or float(amount) <= 0:
+        # -----------------------------
+        # Validate transaction type
+        # -----------------------------
+
+        if transaction_type not in ["Income", "Expense"]:
+
+            cursor.close()
+            connection.close()
+
+            flash("Invalid transaction type.", "error")
+
+            return redirect(
+                url_for("transactions.add_transaction")
+            )
+
+
+        # -----------------------------
+        # Validate amount
+        # -----------------------------
+
+        try:
+
+            amount_value = float(amount)
+
+            if amount_value <= 0:
+                raise ValueError
+
+        except (ValueError, TypeError):
 
             cursor.close()
             connection.close()
 
             flash(
-                "Amount must be greater than zero.",
+                "Amount must be a valid number greater than zero.",
                 "error"
             )
 
             return redirect(
                 url_for("transactions.add_transaction")
             )
+
+
+        # -----------------------------
+        # Validate category
+        # -----------------------------
+
+        try:
+
+            category_id_value = int(category_id)
+
+        except (ValueError, TypeError):
+
+            cursor.close()
+            connection.close()
+
+            flash("Invalid category selected.", "error")
+
+            return redirect(
+                url_for("transactions.add_transaction")
+            )
+
 
         cursor.execute(
             """
@@ -61,20 +105,83 @@ def add_transaction():
             AND type = %s
             """,
             (
-                category_id,
+                category_id_value,
                 transaction_type
             )
         )
 
         category = cursor.fetchone()
 
+
         if not category:
 
             cursor.close()
             connection.close()
 
+            flash("Invalid category selected.", "error")
+
+            return redirect(
+                url_for("transactions.add_transaction")
+            )
+
+
+        # -----------------------------
+        # Validate date
+        # -----------------------------
+
+        if not transaction_date:
+
+            cursor.close()
+            connection.close()
+
+            flash("Transaction date is required.", "error")
+
+            return redirect(
+                url_for("transactions.add_transaction")
+            )
+
+
+        # -----------------------------
+        # Insert transaction
+        # -----------------------------
+
+        try:
+
+            cursor.execute(
+                """
+                INSERT INTO transactions
+                (
+                    user_id,
+                    category_id,
+                    amount,
+                    type,
+                    description,
+                    transaction_date
+                )
+                VALUES
+                (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    session["user_id"],
+                    category_id_value,
+                    amount_value,
+                    transaction_type,
+                    description,
+                    transaction_date
+                )
+            )
+
+            connection.commit()
+
+        except Exception:
+
+            connection.rollback()
+
+            cursor.close()
+            connection.close()
+
             flash(
-                "Invalid category selected.",
+                "Something went wrong while saving the transaction.",
                 "error"
             )
 
@@ -82,31 +189,6 @@ def add_transaction():
                 url_for("transactions.add_transaction")
             )
 
-        cursor.execute(
-            """
-            INSERT INTO transactions
-            (
-                user_id,
-                category_id,
-                amount,
-                type,
-                description,
-                transaction_date
-            )
-            VALUES
-            (%s, %s, %s, %s, %s, %s)
-            """,
-            (
-                session["user_id"],
-                category_id,
-                amount,
-                transaction_type,
-                description,
-                transaction_date
-            )
-        )
-
-        connection.commit()
 
         cursor.close()
         connection.close()
@@ -116,14 +198,27 @@ def add_transaction():
             "success"
         )
 
-        return redirect(url_for("transactions.list_transactions"))
+        return redirect(
+            url_for("transactions.list_transactions")
+        )
 
+
+    # -----------------------------
+    # Load categories
+    # -----------------------------
 
     cursor.execute(
         """
-        SELECT id, name, type
+        SELECT
+            id,
+            name,
+            type
+
         FROM categories
-        ORDER BY type, name
+
+        ORDER BY
+            type,
+            name
         """
     )
 
@@ -132,15 +227,12 @@ def add_transaction():
     cursor.close()
     connection.close()
 
+
     return render_template(
         "add_transaction.html",
         categories=categories
     )
 
-
-# ============================================================
-# TRANSACTIONS LIST
-# ============================================================
 
 @transactions_bp.route("/")
 def list_transactions():
@@ -160,11 +252,12 @@ def list_transactions():
 
 
     connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
 
-    cursor = connection.cursor(
-        dictionary=True
-    )
 
+    # -----------------------------
+    # Transaction query
+    # -----------------------------
 
     query = """
         SELECT
@@ -174,6 +267,7 @@ def list_transactions():
             t.description,
             t.transaction_date,
             c.name AS category
+
         FROM transactions t
 
         JOIN categories c
@@ -182,10 +276,12 @@ def list_transactions():
         WHERE t.user_id = %s
     """
 
-    params = [session["user_id"]]
+    params = [
+        session["user_id"]
+    ]
 
 
-    # SEARCH
+    # Search filter
 
     if search:
 
@@ -198,25 +294,34 @@ def list_transactions():
 
         search_value = f"%{search}%"
 
-        params.extend([
-            search_value,
-            search_value
-        ])
+        params.extend(
+            [
+                search_value,
+                search_value
+            ]
+        )
 
 
-    # TYPE FILTER
+    # Type filter
 
-    if transaction_type in ["Income", "Expense"]:
+    if transaction_type in [
+        "Income",
+        "Expense"
+    ]:
 
         query += """
             AND t.type = %s
         """
 
-        params.append(transaction_type)
+        params.append(
+            transaction_type
+        )
 
 
     query += """
-        ORDER BY t.transaction_date DESC, t.id DESC
+        ORDER BY
+            t.transaction_date DESC,
+            t.id DESC
     """
 
 
@@ -228,11 +333,14 @@ def list_transactions():
     transactions = cursor.fetchall()
 
 
-    # SUMMARY
+    # -----------------------------
+    # Summary
+    # -----------------------------
 
     cursor.execute(
         """
         SELECT
+
             COALESCE(
                 SUM(
                     CASE
@@ -259,36 +367,49 @@ def list_transactions():
 
         WHERE user_id = %s
         """,
-        (session["user_id"],)
+        (
+            session["user_id"],
+        )
     )
 
+
     summary = cursor.fetchone()
+
+
+    total_income = float(
+        summary["total_income"]
+    )
+
+    total_expense = float(
+        summary["total_expense"]
+    )
+
+    balance = (
+        total_income
+        - total_expense
+    )
 
 
     cursor.close()
     connection.close()
 
 
-    balance = (
-        float(summary["total_income"])
-        - float(summary["total_expense"])
-    )
-
-
     return render_template(
         "transactions.html",
+
         transactions=transactions,
+
         search=search,
+
         transaction_type=transaction_type,
-        total_income=summary["total_income"],
-        total_expense=summary["total_expense"],
+
+        total_income=total_income,
+
+        total_expense=total_expense,
+
         balance=balance
     )
 
-
-# ============================================================
-# DELETE TRANSACTION
-# ============================================================
 
 @transactions_bp.route(
     "/delete/<int:transaction_id>",
@@ -301,13 +422,13 @@ def delete_transaction(transaction_id):
 
 
     connection = get_db_connection()
-
     cursor = connection.cursor()
 
 
     cursor.execute(
         """
         DELETE FROM transactions
+
         WHERE id = %s
         AND user_id = %s
         """,
@@ -319,7 +440,6 @@ def delete_transaction(transaction_id):
 
 
     connection.commit()
-
 
     deleted = cursor.rowcount
 

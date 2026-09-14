@@ -3,6 +3,7 @@ from flask import Flask, redirect, url_for, render_template, session
 from config import Config
 from routes.auth import auth_bp
 from routes.transactions import transactions_bp
+from routes.reports import reports_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -10,6 +11,7 @@ app.config.from_object(Config)
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(transactions_bp)
+app.register_blueprint(reports_bp)
 
 
 @app.route("/")
