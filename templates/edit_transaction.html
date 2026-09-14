@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Edit Transaction - Spendly</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="bg-gray-50 text-gray-900">
+
+<div class="min-h-screen flex items-center justify-center p-5">
+
+    <div class="w-full max-w-2xl">
+
+
+        <!-- Header -->
+
+        <div class="mb-6">
+
+            <a
+                href="{{ url_for('transactions.list_transactions') }}"
+                class="text-sm text-indigo-600 hover:text-indigo-700"
+            >
+                ← Back to Transactions
+            </a>
+
+            <h1 class="text-3xl font-bold mt-4">
+                Edit Transaction
+            </h1>
+
+            <p class="text-gray-500 mt-1">
+                Update your transaction details.
+            </p>
+
+        </div>
+
+
+
+        <!-- Form -->
+
+        <div
+            class="bg-white rounded-2xl border border-gray-100
+                   shadow-sm p-6 md:p-8"
+        >
+
+            <form
+                method="POST"
+                class="space-y-6"
+            >
+
+
+                <!-- Type -->
+
+                <div>
+
+                    <label
+                        class="block text-sm font-medium
+                               text-gray-700 mb-2"
+                    >
+                        Transaction Type
+                    </label>
+
+                    <select
+                        name="type"
+                        id="type"
+                        required
+                        class="w-full px-4 py-3 rounded-xl
+                               border border-gray-200
+                               focus:ring-2 focus:ring-indigo-500
+                               outline-none"
+                    >
+
+                        <option
+                            value="Income"
+                            {% if transaction.type == "Income" %}
+                                selected
+                            {% endif %}
+                        >
+                            Income
+                        </option>
+
+                        <option
+                            value="Expense"
+                            {% if transaction.type == "Expense" %}
+                                selected
+                            {% endif %}
+                        >
+                            Expense
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- Category -->
+
+                <div>
+
+                    <label
+                        class="block text-sm font-medium
+                               text-gray-700 mb-2"
+                    >
+                        Category
+                    </label>
+
+                    <select
+                        name="category_id"
+                        id="category"
+                        required
+                        class="w-full px-4 py-3 rounded-xl
+                               border border-gray-200
+                               focus:ring-2 focus:ring-indigo-500
+                               outline-none"
+                    >
+
+                        {% for category in categories %}
+
+                        <option
+                            value="{{ category.id }}"
+                            data-type="{{ category.type }}"
+                            {% if category.id == transaction.category_id %}
+                                selected
+                            {% endif %}
+                        >
+
+                            {{ category.name }}
+
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- Amount -->
+
+                <div>
+
+                    <label
+                        class="block text-sm font-medium
+                               text-gray-700 mb-2"
+                    >
+                        Amount
+                    </label>
+
+                    <input
+                        type="number"
+                        name="amount"
+                        step="0.01"
+                        min="0.01"
+                        value="{{ transaction.amount }}"
+                        required
+                        class="w-full px-4 py-3 rounded-xl
+                               border border-gray-200
+                               focus:ring-2 focus:ring-indigo-500
+                               outline-none"
+                    >
+
+                </div>
+
+
+
+                <!-- Description -->
+
+                <div>
+
+                    <label
+                        class="block text-sm font-medium
+                               text-gray-700 mb-2"
+                    >
+                        Description
+                    </label>
+
+                    <input
+                        type="text"
+                        name="description"
+                        maxlength="255"
+                        value="{{ transaction.description or '' }}"
+                        placeholder="e.g. Grocery shopping"
+                        class="w-full px-4 py-3 rounded-xl
+                               border border-gray-200
+                               focus:ring-2 focus:ring-indigo-500
+                               outline-none"
+                    >
+
+                </div>
+
+
+
+                <!-- Date -->
+
+                <div>
+
+                    <label
+                        class="block text-sm font-medium
+                               text-gray-700 mb-2"
+                    >
+                        Transaction Date
+                    </label>
+
+                    <input
+                        type="date"
+                        name="transaction_date"
+                        value="{{ transaction.transaction_date }}"
+                        required
+                        class="w-full px-4 py-3 rounded-xl
+                               border border-gray-200
+                               focus:ring-2 focus:ring-indigo-500
+                               outline-none"
+                    >
+
+                </div>
+
+
+
+                <!-- Buttons -->
+
+                <div class="flex gap-3 pt-2">
+
+                    <button
+                        type="submit"
+                        class="flex-1 px-6 py-3
+                               bg-indigo-600 text-white
+                               rounded-xl font-medium
+                               hover:bg-indigo-700 transition"
+                    >
+                        Update Transaction
+                    </button>
+
+                    <a
+                        href="{{ url_for('transactions.list_transactions') }}"
+                        class="px-6 py-3
+                               border border-gray-200
+                               rounded-xl font-medium
+                               text-gray-600
+                               hover:bg-gray-50 transition"
+                    >
+                        Cancel
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- Category filtering -->
+
+<script>
+
+    const typeSelect =
+        document.getElementById("type");
+
+    const categorySelect =
+        document.getElementById("category");
+
+
+    function filterCategories() {
+
+        const selectedType =
+            typeSelect.value;
+
+        const options =
+            categorySelect.querySelectorAll("option");
+
+
+        options.forEach(option => {
+
+            const categoryType =
+                option.dataset.type;
+
+            if (categoryType === selectedType) {
+
+                option.hidden = false;
+
+            } else {
+
+                option.hidden = true;
+
+            }
+
+        });
+
+
+        // Select first visible category
+        const visibleOption =
+            [...options].find(
+                option => !option.hidden
+            );
+
+        if (visibleOption) {
+
+            const currentSelected =
+                [...options].find(
+                    option =>
+                        option.selected &&
+                        !option.hidden
+                );
+
+            if (!currentSelected) {
+                visibleOption.selected = true;
+            }
+
+        }
+
+    }
+
+
+    typeSelect.addEventListener(
+        "change",
+        filterCategories
+    );
+
+
+    filterCategories();
+
+</script>
+
+</body>
+
+</html>

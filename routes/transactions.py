@@ -412,6 +412,320 @@ def list_transactions():
 
 
 @transactions_bp.route(
+    "/edit/<int:transaction_id>",
+    methods=["GET", "POST"]
+)
+def edit_transaction(transaction_id):
+
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # --------------------------------
+    # Get existing transaction
+    # --------------------------------
+
+    cursor.execute(
+        """
+        SELECT
+            id,
+            category_id,
+            amount,
+            type,
+            description,
+            transaction_date
+
+        FROM transactions
+
+        WHERE id = %s
+        AND user_id = %s
+        """,
+        (
+            transaction_id,
+            session["user_id"]
+        )
+    )
+
+    transaction = cursor.fetchone()
+
+    if not transaction:
+
+        cursor.close()
+        connection.close()
+
+        flash(
+            "Transaction not found.",
+            "error"
+        )
+
+        return redirect(
+            url_for("transactions.list_transactions")
+        )
+
+
+    # --------------------------------
+    # Update transaction
+    # --------------------------------
+
+    if request.method == "POST":
+
+        transaction_type = request.form.get(
+            "type",
+            ""
+        ).strip()
+
+        category_id = request.form.get(
+            "category_id",
+            ""
+        ).strip()
+
+        amount = request.form.get(
+            "amount",
+            ""
+        ).strip()
+
+        description = request.form.get(
+            "description",
+            ""
+        ).strip()
+
+        transaction_date = request.form.get(
+            "transaction_date",
+            ""
+        ).strip()
+
+
+        # Validate type
+
+        if transaction_type not in [
+            "Income",
+            "Expense"
+        ]:
+
+            cursor.close()
+            connection.close()
+
+            flash(
+                "Invalid transaction type.",
+                "error"
+            )
+
+            return redirect(
+                url_for(
+                    "transactions.edit_transaction",
+                    transaction_id=transaction_id
+                )
+            )
+
+
+        # Validate amount
+
+        try:
+
+            amount_value = float(amount)
+
+            if amount_value <= 0:
+                raise ValueError
+
+        except (ValueError, TypeError):
+
+            cursor.close()
+            connection.close()
+
+            flash(
+                "Amount must be a valid number greater than zero.",
+                "error"
+            )
+
+            return redirect(
+                url_for(
+                    "transactions.edit_transaction",
+                    transaction_id=transaction_id
+                )
+            )
+
+
+        # Validate category
+
+        try:
+
+            category_id_value = int(category_id)
+
+        except (ValueError, TypeError):
+
+            cursor.close()
+            connection.close()
+
+            flash(
+                "Invalid category selected.",
+                "error"
+            )
+
+            return redirect(
+                url_for(
+                    "transactions.edit_transaction",
+                    transaction_id=transaction_id
+                )
+            )
+
+
+        cursor.execute(
+            """
+            SELECT id
+
+            FROM categories
+
+            WHERE id = %s
+            AND type = %s
+            """,
+            (
+                category_id_value,
+                transaction_type
+            )
+        )
+
+        category = cursor.fetchone()
+
+
+        if not category:
+
+            cursor.close()
+            connection.close()
+
+            flash(
+                "Invalid category selected.",
+                "error"
+            )
+
+            return redirect(
+                url_for(
+                    "transactions.edit_transaction",
+                    transaction_id=transaction_id
+                )
+            )
+
+
+        # Validate date
+
+        if not transaction_date:
+
+            cursor.close()
+            connection.close()
+
+            flash(
+                "Transaction date is required.",
+                "error"
+            )
+
+            return redirect(
+                url_for(
+                    "transactions.edit_transaction",
+                    transaction_id=transaction_id
+                )
+            )
+
+
+        # --------------------------------
+        # Update database
+        # --------------------------------
+
+        try:
+
+            cursor.execute(
+                """
+                UPDATE transactions
+
+                SET
+                    category_id = %s,
+                    amount = %s,
+                    type = %s,
+                    description = %s,
+                    transaction_date = %s
+
+                WHERE id = %s
+                AND user_id = %s
+                """,
+                (
+                    category_id_value,
+                    amount_value,
+                    transaction_type,
+                    description,
+                    transaction_date,
+                    transaction_id,
+                    session["user_id"]
+                )
+            )
+
+            connection.commit()
+
+        except Exception:
+
+            connection.rollback()
+
+            cursor.close()
+            connection.close()
+
+            flash(
+                "Something went wrong while updating the transaction.",
+                "error"
+            )
+
+            return redirect(
+                url_for(
+                    "transactions.edit_transaction",
+                    transaction_id=transaction_id
+                )
+            )
+
+
+        cursor.close()
+        connection.close()
+
+        flash(
+            "Transaction updated successfully.",
+            "success"
+        )
+
+        return redirect(
+            url_for("transactions.list_transactions")
+        )
+
+
+    # --------------------------------
+    # Load categories
+    # --------------------------------
+
+    cursor.execute(
+        """
+        SELECT
+            id,
+            name,
+            type
+
+        FROM categories
+
+        ORDER BY
+            type,
+            name
+        """
+    )
+
+    categories = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+
+    return render_template(
+        "edit_transaction.html",
+        transaction=transaction,
+        categories=categories
+    )
+
+
+@transactions_bp.route(
     "/delete/<int:transaction_id>",
     methods=["POST"]
 )
